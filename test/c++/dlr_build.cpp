@@ -18,7 +18,9 @@
 #include <cppdlr/dlr_build.hpp>
 #include <cppdlr/dlr_kernels.hpp>
 #include <fmt/format.h>
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <complex>
 #include <numbers>
 
@@ -103,6 +105,24 @@ TEST(dlr_build, symmetric_fixed_points) {
   EXPECT_EQ(build_rf_fine(fine).size(), fine.nom);
   EXPECT_EQ(t_non.size(), fine.nt);
   EXPECT_EQ(w_non.size(), fine.nt);
+}
+
+/**
+* @brief Test the imaginary frequency cutoff of the fine grid parameters for
+* Lambda beyond the range of int
+*
+* nmax = max(ceil(Lambda), 20) must not overflow. Converting ceil(Lambda) >
+* INT_MAX to int is undefined behavior: it gives INT_MIN, i.e. nmax = 20, on
+* x86-64, and saturates to INT_MAX on ARM64, so imfreq_ops failed for Lambda >
+* 2^31 on x86-64 only.
+*/
+TEST(dlr_build, fineparams_nmax_large_lambda) {
+
+  constexpr int int_max = std::numeric_limits<int>::max();
+  for (double lambda : {1.0, 19.5, 1000.0, 2.0e9, 2147483646.5, 2147483647.0, 2147483648.0, 2.2e9, 1.0e10, 1.0e12}) {
+    double expected = std::min(std::max(std::ceil(lambda), 20.0), static_cast<double>(int_max));
+    EXPECT_EQ(fineparams(lambda).nmax, static_cast<int>(expected)) << "lambda = " << lambda;
+  }
 }
 
 /**
