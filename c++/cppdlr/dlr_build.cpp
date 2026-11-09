@@ -18,6 +18,8 @@
 #include "utils.hpp"
 #include "dlr_kernels.hpp"
 #include <algorithm>
+#include <cmath>
+#include <limits>
 #include <numbers>
 
 using namespace std;
@@ -27,12 +29,27 @@ using std::numbers::pi;
 
 namespace cppdlr {
 
+  namespace {
+
+    // Imaginary frequency cutoff max(ceil(lambda), 20), clamped to the range of int. Converting
+    // ceil(lambda) > INT_MAX to int is undefined behavior (INT_MIN, hence nmax = 20, on x86-64;
+    // INT_MAX on ARM64). The clamped cutoff, nu_max = (2 INT_MAX - 1) pi ~ 1.35e10 for fermions,
+    // still exceeds lambda for lambda up to ~1.35e10.
+    int nmax_of_lambda(double lambda) {
+      constexpr int int_max = std::numeric_limits<int>::max();
+      double n              = std::ceil(lambda);
+      if (!(n < static_cast<double>(int_max))) return int_max;
+      return std::max(static_cast<int>(n), 20);
+    }
+
+  } // namespace
+
   fineparams::fineparams(double lambda, int p)
      : // TODO: make alt constructor in which iommax is a parameter
 
        lambda(lambda),
        p(p),
-       nmax(max((int)ceil(lambda), 20)), // TODO: is this a good choice?
+       nmax(nmax_of_lambda(lambda)), // TODO: is max(ceil(lambda), 20) a good choice?
        npom(static_cast<int>(max(ceil(log(lambda) / log(2.0)), 1.0))),
        npt(static_cast<int>(max(ceil(log(lambda) / log(2.0)) - 2, 1.0))),
        nom(2 * p * npom),

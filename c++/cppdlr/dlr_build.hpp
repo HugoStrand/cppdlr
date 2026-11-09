@@ -38,7 +38,7 @@ namespace cppdlr {
 
     const double lambda; ///< DLR cutoff parameter
     const int p;         ///< Order of composite Chebyshev grid
-    const int nmax;      ///< Imaginary frequency cutoff
+    const int nmax;      ///< Imaginary frequency cutoff, max(ceil(lambda), 20), clamped to INT_MAX
     const int npom;      ///< # fine real frequency grid panels
     const int npt;       ///< # fine imaginary time grid panels
     const int nom;       ///< Total # fine real frequency grid points
